@@ -93,7 +93,8 @@ export default class Watcher {
     }
     this.value = this.lazy
       ? undefined
-      : this.get()
+      : this.get() // 读取了数据，触发了defineProperty的getter，触发依赖收集，将当前Watcher收集到
+                   // Dep中，Watcher可以主动去订阅任意一个数据的变化
   }
 
   /**
@@ -104,7 +105,7 @@ export default class Watcher {
     let value
     const vm = this.vm
     try {
-      value = this.getter.call(vm, vm)
+      value = this.getter.call(vm, vm) // 读取了数据，触发了defineProperty的getters，触发依赖收集
     } catch (e) {
       if (this.user) {
         handleError(e, vm, `getter for watcher "${this.expression}"`)

@@ -22,7 +22,7 @@ export default class Dep {
   }
 
   addSub(sub: Watcher) {
-    this.subs.push(sub)
+    this.subs.push(sub) // 收集Watcher
   }
 
   removeSub(sub: Watcher) {
