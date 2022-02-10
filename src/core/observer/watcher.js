@@ -79,7 +79,8 @@ export default class Watcher {
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
-      this.getter = parsePath(expOrFn)
+      // 执行this.getter()，就可以读取data.a.b.c的内容
+      this.getter = parsePath(expOrFn) // expOrFn ==> a.b.c
       if (!this.getter) {
         this.getter = noop
         process.env.NODE_ENV !== 'production' && warn(
@@ -158,6 +159,7 @@ export default class Watcher {
   }
 
   /**
+   * 更新
    * Subscriber interface.
    * Will be called when a dependency changes.
    */

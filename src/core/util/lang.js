@@ -1,3 +1,10 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-02-10 22:30:11
+ * @Description: file description
+ */
 /* @flow */
 
 /**
@@ -29,13 +36,15 @@ export function def (obj: Object, key: string, val: any, enumerable?: boolean) {
 
 /**
  * Parse simple path.
+ * 解析简单路径
+ * path == a.b.c ==> data[a][b][c]
  */
 const bailRE = new RegExp(`[^${unicodeRegExp.source}.$_\\d]`)
 export function parsePath (path: string): any {
   if (bailRE.test(path)) {
     return
   }
-  const segments = path.split('.')
+  const segments = path.split('.') // ['a', 'b', 'c']
   return function (obj) {
     for (let i = 0; i < segments.length; i++) {
       if (!obj) return

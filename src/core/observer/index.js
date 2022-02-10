@@ -33,6 +33,12 @@ export function toggleObserving (value: boolean) {
  * object. Once attached, the observer converts the target
  * object's property keys into getter/setters that
  * collect dependencies and dispatch updates.
+ *
+ * Observer类会附加到每一个被侦测的object上，
+ * 一旦被附加上，Observer会将object的所有属性转换为getter/setter的形式
+ * 来收集属性的依赖，并且当属性发生变化时会通知这些依赖
+ *
+ * 只要把一个object传到Observer，那么这个object就会变成响应式的object
  */
 export class Observer {
   value: any;
@@ -60,6 +66,9 @@ export class Observer {
    * Walk through all properties and convert them into
    * getter/setters. This method should only be called when
    * value type is Object.
+   *
+   * Walk会将每一属性都转成getter/setters的形式来侦测变化
+   * 这个方法只有在数据类型为Object时才被调用
    */
   walk (obj: Object) {
     const keys = Object.keys(obj)
@@ -139,7 +148,7 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
-  const dep = new Dep()
+  const dep = new Dep() // 依赖
 
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
@@ -152,7 +161,7 @@ export function defineReactive (
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
-
+  // 这里将会递归子属性
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
     enumerable: true,
@@ -160,7 +169,7 @@ export function defineReactive (
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
-        dep.depend()
+        dep.depend() // 收集依赖
         if (childOb) {
           childOb.dep.depend()
           if (Array.isArray(value)) {
@@ -188,7 +197,7 @@ export function defineReactive (
         val = newVal
       }
       childOb = !shallow && observe(newVal)
-      dep.notify()
+      dep.notify() // 触发依赖
     }
   })
 }
