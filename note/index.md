@@ -2,7 +2,7 @@
  * @Author: atdow
  * @Date: 2022-02-10 21:36:03
  * @LastEditors: null
- * @LastEditTime: 2022-02-10 23:42:10
+ * @LastEditTime: 2022-02-11 09:44:29
  * @Description: file description
 -->
 ## 变化侦听
@@ -30,3 +30,5 @@ function defineReactive(data, key, val){
 ![依赖收集](./img/depCollection.png)
 
 Watcher构造函数读取了数据，触发了defineProperty的getter，触发依赖收集，将当前Watcher收集到Dep中；Watcher可以主动去订阅任意一个数据的变化
+
+

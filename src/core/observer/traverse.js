@@ -1,3 +1,10 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-02-13 21:24:35
+ * @Description: file description
+ */
 /* @flow */
 
 import { _Set as Set, isObject } from '../util/index'
@@ -19,9 +26,11 @@ export function traverse (val: any) {
 function _traverse (val: any, seen: SimpleSet) {
   let i, keys
   const isA = Array.isArray(val)
+  // 如果不是Array和object,或者已经被冻结，直接返回
   if ((!isA && !isObject(val)) || Object.isFrozen(val) || val instanceof VNode) {
     return
   }
+  // 保证不会重复收集依赖
   if (val.__ob__) {
     const depId = val.__ob__.dep.id
     if (seen.has(depId)) {
@@ -35,6 +44,6 @@ function _traverse (val: any, seen: SimpleSet) {
   } else {
     keys = Object.keys(val)
     i = keys.length
-    while (i--) _traverse(val[keys[i]], seen)
+    while (i--) _traverse(val[keys[i]], seen) // val[keys[i]]会触发getter，也就是会触发收集依赖的操作
   }
 }

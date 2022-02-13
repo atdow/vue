@@ -2,7 +2,9 @@
 
 import Dep from './dep'
 import VNode from '../vdom/vnode'
-import { arrayMethods } from './array'
+import {
+  arrayMethods // 加工了拦截操作的数组原型方法
+ } from './array'
 import {
   def,
   warn,
@@ -44,24 +46,30 @@ export class Observer {
   value: any;
   dep: Dep;
   vmCount: number; // number of vms that have this object as root $data
-
   constructor (value: any) {
     this.value = value
-    this.dep = new Dep()
+    this.dep = new Dep() // 这里收集的依赖只是数组
     this.vmCount = 0
+    /**
+     * 不可枚举的属性__ob__指向this
+     * 作用：
+     *  1. 标记数据是否被侦测了变化
+     *  2. 方便通过__ob__拿到Observer实例
+     */
     def(value, '__ob__', this)
+    // 如果是数组，则覆盖响应式数组的原型（只对在data中定义的数组才做处理，所以不会污染全局Array.prototype）
     if (Array.isArray(value)) {
+      // __ptoto__是否能用
       if (hasProto) {
-        protoAugment(value, arrayMethods)
+        protoAugment(value, arrayMethods) // value.__proto__ = arrayMethods，拦截改写数据原生方法
       } else {
-        copyAugment(value, arrayMethods, arrayKeys)
+        copyAugment(value, arrayMethods, arrayKeys) // 在数组中挂载定义加工了拦截操作的数组原型方法
       }
-      this.observeArray(value)
+      this.observeArray(value) // 侦测Array中的每一项
     } else {
       this.walk(value)
     }
   }
-
   /**
    * Walk through all properties and convert them into
    * getter/setters. This method should only be called when
@@ -76,9 +84,9 @@ export class Observer {
       defineReactive(obj, keys[i])
     }
   }
-
   /**
    * Observe a list of Array items.
+   * 检测Array中的每一项
    */
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
@@ -102,6 +110,11 @@ function protoAugment (target, src: Object) {
 /**
  * Augment a target Object or Array by defining
  * hidden properties.
+ * 在数组中挂载定义加工了拦截操作的数组原型方法
+ *
+ * target：value
+ * src：arrayMethods
+ * keys：arrayKeys
  */
 /* istanbul ignore next */
 function copyAugment (target: Object, src: Object, keys: Array<string>) {
@@ -115,12 +128,17 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * Attempt to create an observer instance for a value,
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
+ *
+ * 尝试为value创建一个Observer实例
+ * 如果创建成功，直接返回新创建的Observer实例
+ * 如果value已经存在一个Observer实例实例，则直接返回
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value) || value instanceof VNode) {
     return
   }
   let ob: Observer | void
+  // __ob__就是Observer，如果有证明当前value已经是响应式数据
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__
   } else if (
@@ -148,7 +166,7 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
-  const dep = new Dep() // 依赖
+  const dep = new Dep() // 这里收集的依赖只是对象
 
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
@@ -162,16 +180,18 @@ export function defineReactive (
     val = obj[key]
   }
   // 这里将会递归子属性
-  let childOb = !shallow && observe(val)
+  let childOb = !shallow && observe(val) // observe(val)返回的就是Observe实例
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
+      // 收集依赖（对象和数组的依赖都是在这里收集的）
       if (Dep.target) {
-        dep.depend() // 收集依赖
+        dep.depend() // 第一层依赖收集
         if (childOb) {
           childOb.dep.depend()
+          // 数组的依赖收集（收集的依赖在Observer的dep中）
           if (Array.isArray(value)) {
             dependArray(value)
           }
@@ -211,11 +231,12 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
-    warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
+   // warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 如果target是数组并且key是有效的索引
   if (Array.isArray(target) && isValidArrayIndex(key)) {
-    target.length = Math.max(target.length, key)
-    target.splice(key, 1, val)
+    target.length = Math.max(target.length, key) // 设置有效的索引
+    target.splice(key, 1, val) // 改变数值的同时触发拦截器，将val转换成响应式的
     return val
   }
   if (key in target && !(key in Object.prototype)) {
@@ -224,10 +245,10 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
   }
   const ob = (target: any).__ob__
   if (target._isVue || (ob && ob.vmCount)) {
-    process.env.NODE_ENV !== 'production' && warn(
-      'Avoid adding reactive properties to a Vue instance or its root $data ' +
-      'at runtime - declare it upfront in the data option.'
-    )
+    // process.env.NODE_ENV !== 'production' && warn(
+    //   'Avoid adding reactive properties to a Vue instance or its root $data ' +
+    //   'at runtime - declare it upfront in the data option.'
+    // )
     return val
   }
   if (!ob) {

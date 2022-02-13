@@ -356,13 +356,13 @@ export function stateMixin (Vue: Class<Component>) {
     const watcher = new Watcher(vm, expOrFn, cb, options)
     if (options.immediate) {
       try {
-        cb.call(vm, watcher.value)
+        cb.call(vm, watcher.value) // 立即执行
       } catch (error) {
         handleError(error, vm, `callback for immediate watcher "${watcher.expression}"`)
       }
     }
     return function unwatchFn () {
-      watcher.teardown()
+      watcher.teardown() // 把watcher实例从当前正在观察的状态依赖的列表中移除
     }
   }
 }

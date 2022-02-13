@@ -65,17 +65,17 @@ export default class Watcher {
       this.deep = this.user = this.lazy = this.sync = false
     }
     this.cb = cb
-    this.id = ++uid // uid for batching
+    this.id = ++uid // uid for batching 自身id
     this.active = true
     this.dirty = this.lazy // for lazy watchers
     this.deps = []
     this.newDeps = []
-    this.depIds = new Set()
+    this.depIds = new Set() // 依赖id
     this.newDepIds = new Set()
     this.expression = process.env.NODE_ENV !== 'production'
       ? expOrFn.toString()
       : ''
-    // parse expression for getter
+    // parse expression for getter 对函数的支持
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
@@ -91,6 +91,7 @@ export default class Watcher {
         )
       }
     }
+    // 自订阅过程
     this.value = this.lazy
       ? undefined
       : this.get() // 读取了数据，触发了defineProperty的getter，触发依赖收集，将当前Watcher收集到
@@ -115,6 +116,7 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // 实现deep功能
       if (this.deep) {
         traverse(value)
       }
@@ -227,6 +229,7 @@ export default class Watcher {
 
   /**
    * Remove self from all dependencies' subscriber list.
+   * 从所有依赖项的Dep列表中将自己移除
    */
   teardown () {
     if (this.active) {
@@ -238,7 +241,7 @@ export default class Watcher {
       }
       let i = this.deps.length
       while (i--) {
-        this.deps[i].removeSub(this)
+        this.deps[i].removeSub(this) // 移除依赖
       }
       this.active = false
     }

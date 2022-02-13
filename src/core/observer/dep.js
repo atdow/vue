@@ -1,3 +1,10 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-02-13 20:59:32
+ * @Description: file description
+ */
 /* @flow */
 
 import type Watcher from './watcher'
@@ -24,7 +31,7 @@ export default class Dep {
   addSub(sub: Watcher) {
     this.subs.push(sub) // 收集Watcher
   }
-
+  // 把Watcher从subs中移除
   removeSub(sub: Watcher) {
     remove(this.subs, sub)
   }

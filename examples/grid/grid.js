@@ -1,3 +1,12 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-02-13 23:58:31
+ * @Description: file description
+ */
 // register the grid component
 Vue.component('demo-grid', {
   template: '#grid-template',
@@ -65,5 +74,10 @@ var demo = new Vue({
       { name: 'Jackie Chan', power: 7000 },
       { name: 'Jet Li', power: 8000 }
     ]
-  }
+  },
+  mounted(){
+    setTimeout(() => {
+      this.gridData.push({ name: 'test', power: 666 })
+    }, 2000);
+  },
 })
