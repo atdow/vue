@@ -226,12 +226,14 @@ export function defineReactive (
  * Set a property on an object. Adds the new property and
  * triggers change notification if the property doesn't
  * already exist.
+ *
+ * 这个就是this.$set方法
  */
 export function set (target: Array<any> | Object, key: any, val: any): any {
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
-   // warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
+   warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
   // 如果target是数组并且key是有效的索引
   if (Array.isArray(target) && isValidArrayIndex(key)) {
@@ -239,24 +241,28 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     target.splice(key, 1, val) // 改变数值的同时触发拦截器，将val转换成响应式的
     return val
   }
-  if (key in target && !(key in Object.prototype)) {
+  // key已经在target，说明这个key已经被侦听，所以直接修改target[key]会触发setter进行更新
+  if (key in target && !(key in Object.prototype)) { // !(key in Object.prototype)代表是对象
     target[key] = val
     return val
   }
   const ob = (target: any).__ob__
+  // target不能是Vue.js实例或者Vue.js实例的根实例对象（this.$data）
   if (target._isVue || (ob && ob.vmCount)) {
-    // process.env.NODE_ENV !== 'production' && warn(
-    //   'Avoid adding reactive properties to a Vue instance or its root $data ' +
-    //   'at runtime - declare it upfront in the data option.'
-    // )
+    process.env.NODE_ENV !== 'production' && warn(
+      'Avoid adding reactive properties to a Vue instance or its root $data ' +
+      'at runtime - declare it upfront in the data option.'
+    )
     return val
   }
+  // 如果target不是响应式的，说明只是普通变量，直接修改数值就行，不用做其他的过多处理
   if (!ob) {
     target[key] = val
     return val
   }
-  defineReactive(ob.value, key, val)
-  ob.dep.notify()
+  // 下面的逻辑说明是用户在响应式数据上新增了一个属性
+  defineReactive(ob.value, key, val) // 将新增的属性key转换为getter/setter形式
+  ob.dep.notify() // 向target的依赖触发变化通知
   return val
 }
 
