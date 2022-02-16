@@ -268,6 +268,8 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
 
 /**
  * Delete a property and trigger change if necessary.
+ *
+ * this.$delete
  */
 export function del (target: Array<any> | Object, key: any) {
   if (process.env.NODE_ENV !== 'production' &&
@@ -275,11 +277,13 @@ export function del (target: Array<any> | Object, key: any) {
   ) {
     warn(`Cannot delete reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 数组的情况
   if (Array.isArray(target) && isValidArrayIndex(key)) {
-    target.splice(key, 1)
+    target.splice(key, 1) // 劫持更新
     return
   }
   const ob = (target: any).__ob__
+  // 不可以在Vue.js实例或Vue.js实例的根数据对象(ob.vmCount>1)上使用
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid deleting properties on a Vue instance or its root $data ' +
@@ -287,10 +291,12 @@ export function del (target: Array<any> | Object, key: any) {
     )
     return
   }
+  // 如果key不是target自身的属性，则终止程序程序继续执行
   if (!hasOwn(target, key)) {
     return
   }
-  delete target[key]
+  delete target[key] // 先删除数据，再做后面的判断
+  // 如果没有ob，说明不是响应式数组，就终止执行，不行要进行通知更新
   if (!ob) {
     return
   }
