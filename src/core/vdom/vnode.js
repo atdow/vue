@@ -1,16 +1,16 @@
 /* @flow */
 
 export default class VNode {
-  tag: string | void;
-  data: VNodeData | void;
+  tag: string | void; // 节点的名称，如ul、li
+  data: VNodeData | void; // 节点上的数据，如attrs、class、style
   children: ?Array<VNode>;
   text: string | void;
   elm: Node | void;
   ns: string | void;
-  context: Component | void; // rendered in this component's scope
+  context: Component | void; // rendered in this component's scope 当前组件的Vue.js实例
   key: string | number | void;
-  componentOptions: VNodeComponentOptions | void;
-  componentInstance: Component | void; // component instance
+  componentOptions: VNodeComponentOptions | void; // 节点的选项参数，包含propsData、tag和children等信息
+  componentInstance: Component | void; // component instance // 组件的实例
   parent: VNode | void; // component placeholder node
 
   // strictly internal

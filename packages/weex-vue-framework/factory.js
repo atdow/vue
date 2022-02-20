@@ -502,7 +502,7 @@ if (inBrowser) {
     Object.defineProperty(opts, 'passive', ({
       get: function get () {
         /* istanbul ignore next */
-        
+
       }
     })); // https://github.com/facebook/flow/issues/285
     window.addEventListener('test-passive', null, opts);
@@ -5293,6 +5293,7 @@ function createComment (text) {
   return document.createComment(text)
 }
 
+// 用于移动节点
 function insertBefore (
   node,
   target,
@@ -5312,6 +5313,7 @@ function insertBefore (
   node.insertBefore(target, before);
 }
 
+// 删除子节点
 function removeChild (node, child) {
   if (child.nodeType === 3) {
     node.setAttr('value', '');
@@ -6659,12 +6661,12 @@ if (hasTransition) {
   if (window.ontransitionend === undefined &&
     window.onwebkittransitionend !== undefined
   ) {
-    
+
   }
   if (window.onanimationend === undefined &&
     window.onwebkitanimationend !== undefined
   ) {
-    
+
   }
 }
 
