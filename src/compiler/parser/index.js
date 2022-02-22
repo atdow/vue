@@ -1,9 +1,9 @@
 /* @flow */
 
 import he from 'he'
-import { parseHTML } from './html-parser'
-import { parseText } from './text-parser'
-import { parseFilters } from './filter-parser'
+import { parseHTML } from './html-parser' // HTML解析器
+import { parseText } from './text-parser' // 文本解析器
+import { parseFilters } from './filter-parser' // 过滤器解析器
 import { genAssignmentCode } from '../directives/model'
 import { extend, cached, no, camelize, hyphenate } from 'shared/util'
 import { isIE, isEdge, isServerRendering } from 'core/util/env'

@@ -16,14 +16,20 @@ import { unicodeRegExp } from 'core/util/lang'
 // Regular Expressions for parsing tags and attributes
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
 const dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+\][^\s"'<>\/=]*)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
+// 用于匹配开始标签
 const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z${unicodeRegExp.source}]*`
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`
 const startTagOpen = new RegExp(`^<${qnameCapture}`)
+// 用于自闭和标签匹配
 const startTagClose = /^\s*(\/?)>/
+// 用于匹配结束标签
 const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
+
 const doctype = /^<!DOCTYPE [^>]+>/i
 // #7298: escape - to avoid being passed as HTML comment when inlined in page
+// 用于匹配注释
 const comment = /^<!\--/
+// 用于匹配条件注释
 const conditionalComment = /^<!\[/
 
 // Special Elements (can contain anything)
@@ -59,6 +65,7 @@ export function parseHTML (html, options) {
   let index = 0
   let last, lastTag
   while (html) {
+    // 截取模板字符串并触发钩子函数
     last = html
     // Make sure we're not in a plaintext content element like script/style
     if (!lastTag || !isPlainTextElement(lastTag)) {
@@ -69,48 +76,60 @@ export function parseHTML (html, options) {
           const commentEnd = html.indexOf('-->')
 
           if (commentEnd >= 0) {
+            // 是否触发钩子函数的触发条件
             if (options.shouldKeepComment) {
               options.comment(html.substring(4, commentEnd), index, index + commentEnd + 3)
             }
-            advance(commentEnd + 3)
+            advance(commentEnd + 3) // 截取注释
             continue
           }
         }
 
         // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
+        /**
+         * 条件注释
+         *    html === <![if !IE]><link herf="non-ie.css" rel="stylesheet"><![end]>
+         */
         if (conditionalComment.test(html)) {
           const conditionalEnd = html.indexOf(']>')
 
           if (conditionalEnd >= 0) {
-            advance(conditionalEnd + 2)
+            advance(conditionalEnd + 2) // html ==> <link herf="non-ie.css" rel="stylesheet"><![end]>
+            // 结论：条件注释在Vue.js中无用，最终将会被截取
             continue
           }
         }
 
         // Doctype:
+        /**
+         * html === <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+         */
         const doctypeMatch = html.match(doctype)
         if (doctypeMatch) {
-          advance(doctypeMatch[0].length)
+          advance(doctypeMatch[0].length) // html ==> <html lang="en"><head></head><body></body></html>
           continue
         }
 
         // End tag:
+        /**
+         * </div> ==> ["</div>", "div", index: 0, input: "</div>"]
+         */
         const endTagMatch = html.match(endTag)
         if (endTagMatch) {
           const curIndex = index
-          advance(endTagMatch[0].length)
-          parseEndTag(endTagMatch[1], curIndex, index)
+          advance(endTagMatch[0].length) // 先对模板进行截取
+          parseEndTag(endTagMatch[1], curIndex, index) // 触发钩子函数
           continue
         }
 
         // Start tag:
         const startTagMatch = parseStartTag()
         if (startTagMatch) {
-          handleStartTag(startTagMatch)
+          handleStartTag(startTagMatch) // 调用钩子函数start
           if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
             advance(1)
           }
-          continue
+          continue // 这一轮解析工作已经完成，可以进行下一轮解析工作
         }
       }
 
@@ -179,27 +198,42 @@ export function parseHTML (html, options) {
   // Clean up any remaining tags
   parseEndTag()
 
+  // 用于截取HTML的函数
   function advance (n) {
     index += n
     html = html.substring(n)
   }
 
   function parseStartTag () {
-    const start = html.match(startTagOpen)
+    /**
+     * <div></div> ==> ["<div", "div", index:0, input: "<div></div>"]
+     */
+    const start = html.match(startTagOpen) // 解析标签名，判断模板是否符合开始标签的特征
     if (start) {
       const match = {
-        tagName: start[1],
+        tagName: start[1], // div
+        /**
+         * [
+         *    [' class="box"', 'class', '=', 'box', null, null],
+         *    [' id="el"', 'id', '=', 'el', null, null]
+         * ]
+         */
         attrs: [],
         start: index
+        // unarySlash:xxx 是否自闭和
       }
       advance(start[0].length)
+      // html ==> ' class="box" id="el"></div>'
+      // 解析标签属性
       let end, attr
+      // 剩余HTML模板不符合开始标签结尾部分的特征，并且符合标签属性的特性
       while (!(end = html.match(startTagClose)) && (attr = html.match(dynamicArgAttribute) || html.match(attribute))) {
         attr.start = index
-        advance(attr[0].length)
+        advance(attr[0].length) // html = html.substring(attr[0].length)
         attr.end = index
         match.attrs.push(attr)
       }
+      // 判断该标签是否是自闭和标签
       if (end) {
         match.unarySlash = end[1]
         advance(end[0].length)
@@ -208,7 +242,7 @@ export function parseHTML (html, options) {
       }
     }
   }
-
+  // 将tagName、attrs和unary等数据取出来，然后调用钩子函数将这些数据放到参数中
   function handleStartTag (match) {
     const tagName = match.tagName
     const unarySlash = match.unarySlash
