@@ -87,10 +87,15 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // updated in a parent's updated hook.
   }
 
+  /**
+   * 迫使Vue.js实例重新渲染
+   *    仅仅影响实例本身以及插入插槽内容的子组件，而不是所有的子组件
+   * 组件就是vue.js实例，所以组件级别的watcher和Vue.js实例的watcher所的是同一个watcher
+   */
   Vue.prototype.$forceUpdate = function () {
     const vm: Component = this
     if (vm._watcher) {
-      vm._watcher.update()
+      vm._watcher.update() // 手动通知Vue.js实例重新渲染
     }
   }
 

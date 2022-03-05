@@ -68,8 +68,12 @@ export function parseHTML (html, options) {
     // 截取模板字符串并触发钩子函数
     last = html
     // Make sure we're not in a plaintext content element like script/style
+    /**
+     * lastTag: 父元素
+     * 如果父元素不存在或者不是纯文本内容元素（script、style、textarea）
+     */
     if (!lastTag || !isPlainTextElement(lastTag)) {
-      let textEnd = html.indexOf('<')
+      let textEnd = html.indexOf('<') // 看需要解析的字符串是不是以"<"开头，如果不是，那么一定是文本
       if (textEnd === 0) {
         // Comment:
         if (comment.test(html)) {
@@ -134,8 +138,17 @@ export function parseHTML (html, options) {
       }
 
       let text, rest, next
+      /**
+       * 截取文本：
+       *    普通情况：我是文本</div>  ==> 截取<之前
+       *    特殊情况：1<2</div> 截取"1"后剩余了"<2</div>"，"<2"也是文本，所以要在while循环中做特殊处理
+       *
+       *  html ==> "1<2<3</div>"
+       *
+       */
       if (textEnd >= 0) {
-        rest = html.slice(textEnd)
+        rest = html.slice(textEnd) // 一直截取到第一个"<"，rest ==> <2<3</div>
+        // 不符合任何需要被解析的片段的类型：结束标签、开始标签、注释标签和条件标签（处理特殊情况）
         while (
           !endTag.test(rest) &&
           !startTagOpen.test(rest) &&
@@ -143,14 +156,15 @@ export function parseHTML (html, options) {
           !conditionalComment.test(rest)
         ) {
           // < in plain text, be forgiving and treat it as text
-          next = rest.indexOf('<', 1)
+          // 如果"<"在纯文本中，把它作为纯文本对待
+          next = rest.indexOf('<', 1) // 匹配到下一个"<"，也就是相当于到下一个标签（不严谨）
           if (next < 0) break
-          textEnd += next
-          rest = html.slice(textEnd)
+          textEnd += next // 结束索引往后移
+          rest = html.slice(textEnd) // 剩余需要解析的字符串
         }
-        text = html.substring(0, textEnd)
+        text = html.substring(0, textEnd) // 截取文本
       }
-
+      // 如果文本中找不到< ，就说明整个模板都是文本
       if (textEnd < 0) {
         text = html
       }
@@ -158,17 +172,23 @@ export function parseHTML (html, options) {
       if (text) {
         advance(text.length)
       }
-
+      // 触发钩子函数
       if (options.chars && text) {
         options.chars(text, index - text.length, index)
       }
     } else {
+      /**
+       * 父元素是script、style、textarea的处理逻辑
+       *  <script>console.log(1)</script> ==> console.log(1)</script>
+       */
       let endTagLength = 0
-      const stackedTag = lastTag.toLowerCase()
+      const stackedTag = lastTag.toLowerCase() // <script>
+      // 匹配结束标签前包括结束标签自身在内的所有文本
       const reStackedTag = reCache[stackedTag] || (reCache[stackedTag] = new RegExp('([\\s\\S]*?)(</' + stackedTag + '[^>]*>)', 'i'))
       const rest = html.replace(reStackedTag, function (all, text, endTag) {
         endTagLength = endTag.length
         if (!isPlainTextElement(stackedTag) && stackedTag !== 'noscript') {
+          // text ==> console.log(1)
           text = text
             .replace(/<!\--([\s\S]*?)-->/g, '$1') // #7298
             .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1')
@@ -179,7 +199,7 @@ export function parseHTML (html, options) {
         if (options.chars) {
           options.chars(text)
         }
-        return ''
+        return '' // 返回空字符串，说明将匹配到的内容都截取掉了
       })
       index += html.length - rest.length
       html = rest

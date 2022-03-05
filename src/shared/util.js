@@ -81,6 +81,7 @@ export function isPromise (val: any): boolean {
 
 /**
  * Convert a value to a string that is actually rendered.
+ * _s(name)
  */
 export function toString (val: any): string {
   return val == null

@@ -75,6 +75,7 @@ export function createASTElement (
 
 /**
  * Convert HTML string to AST.
+ * 解析器：将HTML字符串转成AST
  */
 export function parse (
   template: string,
@@ -94,10 +95,14 @@ export function parse (
 
   delimiters = options.delimiters
 
-  const stack = []
+  /**
+   * 开始标签入队
+   * 结束标签出队
+   */
+  const stack = [] // 维护dom层级的队列
   const preserveWhitespace = options.preserveWhitespace !== false
   const whitespaceOption = options.whitespace
-  let root
+  let root // 构建出来的AST树
   let currentParent
   let inVPre = false
   let inPre = false
@@ -201,6 +206,7 @@ export function parse (
     }
   }
 
+  // 里面的四个钩子函数生成不同的节点
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,
@@ -210,6 +216,7 @@ export function parse (
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
+    // 每当解析到标签的开始位置时，触发该函数
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -296,7 +303,7 @@ export function parse (
         closeElement(element)
       }
     },
-
+    // 每当解析到标签的结束位置时，触发该函数
     end (tag, start, end) {
       const element = stack[stack.length - 1]
       // pop stack
@@ -307,8 +314,9 @@ export function parse (
       }
       closeElement(element)
     },
-
+    // 文本的二次加工
     chars (text: string, start: number, end: number) {
+      // currentParent：当前节点的父节点，也就是栈中的最后一个节点
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
           if (text === template) {
@@ -357,6 +365,10 @@ export function parse (
         }
         let res
         let child: ?ASTNode
+        /**
+         * 如果执行parseText后有返回结果，说明文本是带变量的文本
+         * "hello {{name}}" ==> parseText(text) ==> '"hello "+_s(name)'
+         */
         if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
           child = {
             type: 2,
@@ -365,6 +377,7 @@ export function parse (
             text
           }
         } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
+          // 普通文本节点
           child = {
             type: 3,
             text
@@ -375,7 +388,7 @@ export function parse (
             child.start = start
             child.end = end
           }
-          children.push(child)
+          children.push(child) // 将文本节点添加到父节点的children中
         }
       }
     },

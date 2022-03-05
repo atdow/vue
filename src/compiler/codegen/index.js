@@ -40,6 +40,15 @@ export type CodegenResult = {
   staticRenderFns: Array<string>
 };
 
+/**
+ * 代码生成器：其实就是字符串拼接的过程
+ * 通过递归AST来生成字符串，最先生成根节点，然后在子节点生成后，将其拼接在根节点的参数中，子节点的子节点拼接在子节点的参数中，
+ * 这样一层一层地拼接，直到最后拼接成完整的字符串
+ * 最终将字符串拼接在with中返回给调用者
+ * @param {*} ast
+ * @param {*} options
+ * @returns
+ */
 export function generate (
   ast: ASTElement | void,
   options: CompilerOptions
@@ -51,7 +60,19 @@ export function generate (
     staticRenderFns: state.staticRenderFns
   }
 }
+/*
+类型     创建方法          别名
+元素节点 createElement     _c
+文本节点 createTextVNode   _v
+注释节点 createEmptyVNode  _e
+*/
 
+/**
+ * 生成_c(createElement)函数调用的字符串
+ * @param {*} el
+ * @param {*} state
+ * @returns
+ */
 export function genElement (el: ASTElement, state: CodegenState): string {
   if (el.parent) {
     el.pre = el.pre || el.parent.pre
@@ -76,11 +97,13 @@ export function genElement (el: ASTElement, state: CodegenState): string {
       code = genComponent(el.component, el, state)
     } else {
       let data
+      // 如果el.plain是true,则说明节点没有属性
       if (!el.plain || (el.pre && state.maybeComponent(el))) {
         data = genData(el, state)
       }
 
       const children = el.inlineTemplate ? null : genChildren(el, state, true)
+      // _c(tagName, data, children)
       code = `_c('${el.tag}'${
         data ? `,${data}` : '' // data
       }${
@@ -216,6 +239,13 @@ export function genFor (
     '})'
 }
 
+/**
+ * 生成data属性
+ * 就是一个拼接字符串的过程：'{' + `key:${el.key},` + ... + '}'
+ * @param {} el
+ * @param {*} state
+ * @returns
+ */
 export function genData (el: ASTElement, state: CodegenState): string {
   let data = '{'
 
@@ -288,6 +318,7 @@ export function genData (el: ASTElement, state: CodegenState): string {
       data += `${inlineTemplate},`
     }
   }
+  // data.replace(/,$/, ''): 将最后的','去除，保证拼接成字符串对象
   data = data.replace(/,$/, '') + '}'
   // v-bind dynamic argument wrap
   // v-bind with dynamic arguments must be applied using the same v-bind object
@@ -460,6 +491,15 @@ function genScopedSlot (
   return `{key:${el.slotTarget || `"default"`},fn:${fn}${reverseProxy}}`
 }
 
+/**
+ * 生成子节点列表字符串: 根据不同的子节点类型生成不同的子节点字符串并将其拼接到一起
+ * @param {*} el
+ * @param {*} state
+ * @param {*} checkSkip
+ * @param {*} altGenElement
+ * @param {*} altGenNode
+ * @returns
+ */
 export function genChildren (
   el: ASTElement,
   state: CodegenState,
@@ -485,6 +525,8 @@ export function genChildren (
       ? getNormalizationType(children, state.maybeComponent)
       : 0
     const gen = altGenNode || genNode
+    // 这里将会是个递归过程
+    // return `[${children.map(c => genNode(c, state)).join(',')}]`
     return `[${children.map(c => gen(c, state)).join(',')}]${
       normalizationType ? `,${normalizationType}` : ''
     }`
@@ -521,7 +563,12 @@ function getNormalizationType (
 function needsNormalization (el: ASTElement): boolean {
   return el.for !== undefined || el.tag === 'template' || el.tag === 'slot'
 }
-
+/**
+ * 根据不同的子节点类型生成不同的字符串
+ * @param {*} node
+ * @param {*} state
+ * @returns
+ */
 function genNode (node: ASTNode, state: CodegenState): string {
   if (node.type === 1) {
     return genElement(node, state)
@@ -532,13 +579,23 @@ function genNode (node: ASTNode, state: CodegenState): string {
   }
 }
 
+/**
+ * 生成文本节点：使用_v()包装起来
+ * @param {*} text
+ * @returns
+ */
 export function genText (text: ASTText | ASTExpression): string {
-  return `_v(${text.type === 2
-    ? text.expression // no need for () because already wrapped in _s()
-    : transformSpecialNewlines(JSON.stringify(text.text))
+  return `_v(${text.type === 2 // 动态文本
+    ? text.expression // no need for () because already wrapped in _s() text.expression==> '"Hello"+_s(name)' ==> '"Hello Berwin"'
+    : transformSpecialNewlines(JSON.stringify(text.text)) // 静态文本调用JSON.stringify(text.text)的原因是：可以给文本包装一层字符串 ==> 'hello' ==> "'hello'"
   })`
 }
 
+/**
+ * 生成注释节点：使用_e()包装起来
+ * @param {*} comment
+ * @returns
+ */
 export function genComment (comment: ASTText): string {
   return `_e(${JSON.stringify(comment.text)})`
 }

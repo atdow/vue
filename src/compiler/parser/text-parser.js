@@ -1,3 +1,10 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-03-04 22:17:08
+ * @Description: file description
+ */
 /* @flow */
 
 import { cached } from 'shared/util'
@@ -17,37 +24,49 @@ type TextParseResult = {
   tokens: Array<string | { '@binding': string }>
 }
 
+/**
+ * 解析文本（对文本进行二次加工）
+ * "hello {{name}} !!" ==> parseText(text) ==> '"hello "+_s(name)+"!!"'
+ * @param {*} text
+ * @param {*} delimiters
+ * @returns
+ */
 export function parseText (
   text: string,
   delimiters?: [string, string]
 ): TextParseResult | void {
   const tagRE = delimiters ? buildRegex(delimiters) : defaultTagRE
+  // 如果匹配不到变量(使用{{}}包起来的形式)，也就是普通文本，直接retuen(unedfined)
   if (!tagRE.test(text)) {
     return
   }
   const tokens = []
   const rawTokens = []
-  let lastIndex = tagRE.lastIndex = 0
+  let lastIndex = tagRE.lastIndex = 0 // 初始化为0最开始位置
   let match, index, tokenValue
   while ((match = tagRE.exec(text))) {
     index = match.index
     // push text token
+    // 先把 {{ 前面的文本添加到tokens中
     if (index > lastIndex) {
       rawTokens.push(tokenValue = text.slice(lastIndex, index))
       tokens.push(JSON.stringify(tokenValue))
     }
     // tag token
     const exp = parseFilters(match[1].trim())
-    tokens.push(`_s(${exp})`)
+    // 把变量改成_s(x)这样的形式也添加到数组中
+    tokens.push(`_s(${exp})`) // _s(name) ==> toString函数
     rawTokens.push({ '@binding': exp })
+    // 设置lastIndex来保证下一轮循环时，正则表达式不再重复匹配已经解析过的文本
     lastIndex = index + match[0].length
   }
+  // 当所有变量都处理完毕后，如果最后一个变量右边还有文本，就将文本添加到数组中
   if (lastIndex < text.length) {
     rawTokens.push(tokenValue = text.slice(lastIndex))
     tokens.push(JSON.stringify(tokenValue))
   }
   return {
-    expression: tokens.join('+'),
+    expression: tokens.join('+'), // 使用 + 进行拼接
     tokens: rawTokens
   }
 }
