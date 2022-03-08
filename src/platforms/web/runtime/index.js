@@ -1,3 +1,10 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-03-08 21:45:22
+ * @Description: file description
+ */
 /* @flow */
 
 import Vue from 'core/index'
@@ -33,13 +40,16 @@ extend(Vue.options.components, platformComponents)
 // install platform patch function
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
-// public mount method
+/**
+ * public mount method
+ * 只包含运行时版本的vm.$mount
+ */
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
-  el = el && inBrowser ? query(el) : undefined
-  return mountComponent(this, el, hydrating)
+  el = el && inBrowser ? query(el) : undefined // 真实DOM
+  return mountComponent(this, el, hydrating) // 将Vue.js实例挂载到DOM元素上
 }
 
 // devtools global hook

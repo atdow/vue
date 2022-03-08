@@ -99,22 +99,29 @@ export function lifecycleMixin (Vue: Class<Component>) {
     }
   }
 
+  /**
+   * 完全销毁一个实例，清理该实例与其他实例的连接，并解绑其全部指令和监听器，同时会触发beforeDestroy和destroy的钩子函数
+   */
   Vue.prototype.$destroy = function () {
     const vm: Component = this
+    // 防止反复执行
     if (vm._isBeingDestroyed) {
       return
     }
-    callHook(vm, 'beforeDestroy')
+    callHook(vm, 'beforeDestroy') // 触发钩子函数
     vm._isBeingDestroyed = true
     // remove self from parent
+    // 删除自己与父级之间的连接
     const parent = vm.$parent
-    if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
-      remove(parent.$children, vm)
+    if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) { // vm.$options.abstract：抽象组件
+      remove(parent.$children, vm) // 只需要从一个父组件中删除就行，因为同一个组件在不同的父组件中是不同的Vue.js实例
     }
     // teardown watchers
+    // 从watcher监听的所有状态的依赖列表中移除watcher（组件上的状态watcher）
     if (vm._watcher) {
       vm._watcher.teardown()
     }
+    // 销毁用户使用vm.$watch所创建的watcher实例
     let i = vm._watchers.length
     while (i--) {
       vm._watchers[i].teardown()
@@ -125,13 +132,14 @@ export function lifecycleMixin (Vue: Class<Component>) {
       vm._data.__ob__.vmCount--
     }
     // call the last hook...
-    vm._isDestroyed = true
+    vm._isDestroyed = true // 标记Vue.js实例已经被销毁
     // invoke destroy hooks on current rendered tree
+    // 在vnode树上触发destory钩子函数解绑指令（但是不会将已经渲染到页面中的DOM节点移除）
     vm.__patch__(vm._vnode, null)
     // fire destroyed hook
-    callHook(vm, 'destroyed')
+    callHook(vm, 'destroyed') // 触发钩子函数
     // turn off all instance listeners.
-    vm.$off()
+    vm.$off() // 移除所有事件监听器
     // remove __vue__ reference
     if (vm.$el) {
       vm.$el.__vue__ = null
@@ -143,17 +151,22 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
+/**
+ * 将Vue.js实例挂载到DOM元素上
+ */
 export function mountComponent (
   vm: Component,
   el: ?Element,
   hydrating?: boolean
 ): Component {
   vm.$el = el
+  // 实例上没有渲染函数
   if (!vm.$options.render) {
-    vm.$options.render = createEmptyVNode
+    vm.$options.render = createEmptyVNode // 创建一个注释类型的VNode节点
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
       if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
+        // 将el参数指定页面的元素节点替换成一个注释节点
         vm.$options.el || el) {
         warn(
           'You are using the runtime-only build of Vue where the template ' +
@@ -169,7 +182,7 @@ export function mountComponent (
       }
     }
   }
-  callHook(vm, 'beforeMount')
+  callHook(vm, 'beforeMount') // 触发生命周期钩子函数
 
   let updateComponent
   /* istanbul ignore if */
@@ -192,6 +205,11 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
+      /**
+       * 先调用渲染函数得到一份最新的VNode树，然后通过_update方法对最新的VNode和上一次渲染用到的旧VNode进行对比并更新DOM节点
+       * vm._update: 调用虚拟DOM中的patch方法来执行节点的对比与渲染操作
+       * vm._render：执行渲染函数，得到一份最新的VNode节点树
+       */
       vm._update(vm._render(), hydrating)
     }
   }
@@ -199,6 +217,12 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  /**
+   * 挂载(持续性渲染)
+   * Watcher中的第二个参数是函数，函数中读取的所有数据都将被watcher观察（触发getter收集依赖），
+   * 这些数据中的任何一个发生改变时，watcher都将得到通知；
+   * 当数据发生变化时，watcher会一次又一次地执行函数进行渲染流程，如此反复，这个过程会持续到实例被销毁
+   */
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {

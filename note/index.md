@@ -2,7 +2,7 @@
  * @Author: atdow
  * @Date: 2022-02-10 21:36:03
  * @LastEditors: null
- * @LastEditTime: 2022-02-20 22:17:57
+ * @LastEditTime: 2022-03-07 21:49:01
  * @Description: file description
 -->
 ## 变化侦听
@@ -64,3 +64,39 @@ this.obj.__ob__.notify()
 - HTML解析器
 - 文本解析器
 - 过滤器解析器
+
+
+```js
+export function nextTick (cb?: Function, ctx?: Object) {
+  let _resolve
+  // 将回调函数添加到callbacks中
+  callbacks.push(() => {
+    if (cb) {
+      try {
+        cb.call(ctx)
+      } catch (e) {
+        handleError(e, ctx, 'nextTick')
+      }
+    } else if (_resolve) {
+      _resolve(ctx)
+    }
+  })
+  // 只推一次（在一次事件循环中调用了两次nextTick，只有第一次才会将任务推进任务队列，第二次只会改变callbacks，因为中执行的是callbacks）
+  if (!pending) {
+    pending = true // 标记已经推进
+    timerFunc()
+  }
+  /**
+   * 如果没有提供回调且在支持Promise的环境中，则返回一个Promise
+   * this.$nextTick().then((ctx)=>{
+   *  // dom更新了
+   * })
+   */
+  // $flow-disable-line
+  if (!cb && typeof Promise !== 'undefined') {
+    return new Promise(resolve => {
+      _resolve = resolve
+    })
+  }
+}
+```

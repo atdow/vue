@@ -14,7 +14,10 @@ const idToTemplate = cached(id => {
   return el && el.innerHTML
 })
 
-const mount = Vue.prototype.$mount
+/**
+ * 完成版的vm.$mount
+ */
+const mount = Vue.prototype.$mount // 将Vue原型链上的$mount方法保存在mount中，以便后续使用
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
@@ -32,9 +35,13 @@ Vue.prototype.$mount = function (
   const options = this.$options
   // resolve template/el and convert to render function
   if (!options.render) {
-    let template = options.template
+    /**
+     * 将模板编译成渲染函数并赋值给options.render
+     */
+    let template = options.template // 用户实例化Vue.js时设置的模板
     if (template) {
       if (typeof template === 'string') {
+        // 当做选择符
         if (template.charAt(0) === '#') {
           template = idToTemplate(template)
           /* istanbul ignore if */
@@ -45,7 +52,8 @@ Vue.prototype.$mount = function (
             )
           }
         }
-      } else if (template.nodeType) {
+        // 如果template是字符串，但不是以#开头，说明template是用户设置的模板，不需要进行处理，直接使用即可
+      } else if (template.nodeType) { // DOM元素
         template = template.innerHTML
       } else {
         if (process.env.NODE_ENV !== 'production') {
@@ -54,15 +62,17 @@ Vue.prototype.$mount = function (
         return this
       }
     } else if (el) {
-      template = getOuterHTML(el)
+      template = getOuterHTML(el) // 从用户提供的el选项中获取模板(HTML字符串)
     }
+    // 编译相关逻辑
     if (template) {
       /* istanbul ignore if */
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')
       }
 
-      const { render, staticRenderFns } = compileToFunctions(template, {
+      // 将模板编译成渲染函数并设置到this.$options上
+      const { render, staticRenderFns } = compileToFunctions(template, { // res ==> {render,staticRenderFns}
         outputSourceRange: process.env.NODE_ENV !== 'production',
         shouldDecodeNewlines,
         shouldDecodeNewlinesForHref,
@@ -79,12 +89,13 @@ Vue.prototype.$mount = function (
       }
     }
   }
-  return mount.call(this, el, hydrating)
+  return mount.call(this, el, hydrating) // 函数劫持
 }
 
 /**
  * Get outerHTML of elements, taking care
  * of SVG elements in IE as well.
+ * 返回参数中提供的DOM元素的HTML字符串
  */
 function getOuterHTML (el: Element): string {
   if (el.outerHTML) {

@@ -5,17 +5,18 @@ import { noop } from 'shared/util'
 import { handleError } from './error'
 import { isIE, isIOS, isNative } from './env'
 
-export let isUsingMicroTask = false
+export let isUsingMicroTask = false // 是否使用微任务
 
-const callbacks = []
-let pending = false
+const callbacks = [] // 用来存储vm.$nextTick参数中提供的回调
+let pending = false // 标记是否已经向任务队列中添加了一个任务（每当向任务队列中插入任务时，将pending设置为true,每当任务被执行时将pending设置为false）
 
+// 被注册的任务：将callbacks中的所有函数依次执行（一轮事件循环中flushCallbacks只会执行一次）
 function flushCallbacks () {
-  pending = false
+  pending = false // 清除
   const copies = callbacks.slice(0)
-  callbacks.length = 0
+  callbacks.length = 0 // 清除callbacks
   for (let i = 0; i < copies.length; i++) {
-    copies[i]()
+    copies[i]() // 依次触发
   }
 }
 
@@ -30,7 +31,7 @@ function flushCallbacks () {
 // where microtasks have too high a priority and fire in between supposedly
 // sequential events (e.g. #4521, #6690, which have workarounds)
 // or even between bubbling of the same event (#6566).
-let timerFunc
+let timerFunc // 作用是将flushCallbacks添加到异步任务队列中（微任务或宏任务）
 
 // The nextTick behavior leverages the microtask queue, which can be accessed
 // via either native Promise.then or MutationObserver.
@@ -40,7 +41,7 @@ let timerFunc
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
-  const p = Promise.resolve()
+  const p = Promise.resolve() // 微任务队列
   timerFunc = () => {
     p.then(flushCallbacks)
     // In problematic UIWebViews, Promise.then doesn't completely break, but
@@ -74,11 +75,13 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   // Fallback to setImmediate.
   // Technically it leverages the (macro) task queue,
   // but it is still a better choice than setTimeout.
+  // 宏任务
   timerFunc = () => {
     setImmediate(flushCallbacks)
   }
 } else {
   // Fallback to setTimeout.
+  // 宏任务
   timerFunc = () => {
     setTimeout(flushCallbacks, 0)
   }
@@ -86,6 +89,7 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
 
 export function nextTick (cb?: Function, ctx?: Object) {
   let _resolve
+  // 将回调函数添加到callbacks中
   callbacks.push(() => {
     if (cb) {
       try {
@@ -97,10 +101,17 @@ export function nextTick (cb?: Function, ctx?: Object) {
       _resolve(ctx)
     }
   })
+  // 只推一次（在一次事件循环中调用了两次nextTick，只有第一次才会将任务推进任务队列，第二次只会改变callbacks，因为中执行的是callbacks）
   if (!pending) {
-    pending = true
+    pending = true // 标记已经推进
     timerFunc()
   }
+  /**
+   * 如果没有提供回调且在支持Promise的环境中，则返回一个Promise
+   * this.$nextTick().then((ctx)=>{
+   *  // dom更新了
+   * })
+   */
   // $flow-disable-line
   if (!cb && typeof Promise !== 'undefined') {
     return new Promise(resolve => {

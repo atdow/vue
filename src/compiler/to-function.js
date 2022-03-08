@@ -21,12 +21,15 @@ function createFunction (code, errors) {
 export function createCompileToFunctionFn (compile: Function): Function {
   const cache = Object.create(null)
 
+  /**
+   * 将模板编译成代码字符串并将代码字符串转换成渲染
+   */
   return function compileToFunctions (
     template: string,
     options?: CompilerOptions,
     vm?: Component
   ): CompiledFunctionResult {
-    options = extend({}, options)
+    options = extend({}, options) // 将options属性混合到空对象，让options成为可选参数
     const warn = options.warn || baseWarn
     delete options.warn
 
@@ -49,14 +52,20 @@ export function createCompileToFunctionFn (compile: Function): Function {
     }
 
     // check cache
+    // 检查缓存
     const key = options.delimiters
       ? String(options.delimiters) + template
       : template
     if (cache[key]) {
-      return cache[key]
+      return cache[key] // 取缓存结果
     }
 
     // compile
+    /**
+     * 编译
+     * 将模板编译成代码字符串并存储在compiled的render属性中
+     * compiled.render ==> 'with(this){return _c("div",{attrs:{"id", "el"}},[_v("hello "+_s(name))])}'
+     */
     const compiled = compile(template, options)
 
     // check compilation errors/tips
@@ -88,9 +97,10 @@ export function createCompileToFunctionFn (compile: Function): Function {
     }
 
     // turn code into functions
+    // 将代码字符串转换为渲染函数
     const res = {}
     const fnGenErrors = []
-    res.render = createFunction(compiled.render, fnGenErrors)
+    res.render = createFunction(compiled.render, fnGenErrors) // new Function(code)
     res.staticRenderFns = compiled.staticRenderFns.map(code => {
       return createFunction(code, fnGenErrors)
     })

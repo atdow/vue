@@ -1,3 +1,10 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-03-08 20:57:46
+ * @Description: file description
+ */
 /* @flow */
 
 import { warn } from 'core/util/index'
@@ -20,6 +27,6 @@ export function query (el: string | Element): Element {
     }
     return selected
   } else {
-    return el
+    return el // Element
   }
 }
