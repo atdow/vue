@@ -18,6 +18,10 @@ import {
   defineReactive
 } from '../util/index'
 
+/**
+ * 初始化全局api
+ * 全局API是Vue.js上的方法，实例方法是Vue.prototype上的方法
+ */
 export function initGlobalAPI (Vue: GlobalAPI) {
   // config
   const configDef = {}
@@ -51,7 +55,10 @@ export function initGlobalAPI (Vue: GlobalAPI) {
     return obj
   }
 
+
+  // 用于保存指令的位置
   Vue.options = Object.create(null)
+  // ASSET_TYPES === ['component', 'directive', 'filter']
   ASSET_TYPES.forEach(type => {
     Vue.options[type + 's'] = Object.create(null)
   })
@@ -62,8 +69,8 @@ export function initGlobalAPI (Vue: GlobalAPI) {
 
   extend(Vue.options.components, builtInComponents)
 
-  initUse(Vue)
-  initMixin(Vue)
-  initExtend(Vue)
-  initAssetRegisters(Vue)
+  initUse(Vue) // 初始化Vue.use
+  initMixin(Vue) // 初始化Vue.mixin
+  initExtend(Vue) // 初始化Vue.extend
+  initAssetRegisters(Vue) // 初始化Vue.component、Vue.directive和Vue.filter
 }
