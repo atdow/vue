@@ -13,6 +13,7 @@ import { extend, mergeOptions, formatComponentName } from '../util/index'
 let uid = 0
 
 export function initMixin (Vue: Class<Component>) {
+  // this.init
   Vue.prototype._init = function (options?: Object) {
     const vm: Component = this
     // a uid
@@ -35,6 +36,10 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
+      /**
+       * 初始化$options
+       * $options包含了用户的所有constructor内容，比如生命周期等
+       */
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -49,13 +54,14 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
-    initLifecycle(vm)
-    initEvents(vm)
+    initLifecycle(vm) // 初始化实例属性
+    initEvents(vm) // 初始化事件
     initRender(vm)
     callHook(vm, 'beforeCreate')
+    // 在data/props之前初始化inject，这样做的目的是让用户在data/props中使用inject所注入的内容
     initInjections(vm) // resolve injections before data/props
     initState(vm)
-    initProvide(vm) // resolve provide after data/props
+    initProvide(vm) // resolve provide after data/props 在data/props后初始化provide
     callHook(vm, 'created')
 
     /* istanbul ignore if */

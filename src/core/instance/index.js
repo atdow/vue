@@ -2,7 +2,7 @@
  * @Author: atdow
  * @Date: 2022-02-10 21:22:08
  * @LastEditors: null
- * @LastEditTime: 2022-03-06 02:37:41
+ * @LastEditTime: 2022-03-12 12:57:10
  * @Description: file description
  */
 import { initMixin } from './init'
@@ -13,6 +13,7 @@ import { lifecycleMixin } from './lifecycle'
 import { warn } from '../util/index'
 
 function Vue (options) {
+  // 说明Vue是构造函数，需要new处理啊
   if (process.env.NODE_ENV !== 'production' &&
     !(this instanceof Vue)
   ) {

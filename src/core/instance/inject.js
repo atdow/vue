@@ -1,3 +1,10 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-03-14 23:19:30
+ * @Description: file description
+ */
 /* @flow */
 
 import { hasOwn } from 'shared/util'
@@ -12,11 +19,15 @@ export function initProvide (vm: Component) {
       : provide
   }
 }
-
+/**
+ * 初始化inject
+ * 在data/props之前初始化inject，这样做的目的是让用户在data/props中使用inject所注入的内容
+ */
 export function initInjections (vm: Component) {
+  // 通过用户配置的inject，自底向上搜索可用的注入内容，并将搜索结果返回
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
-    toggleObserving(false)
+    toggleObserving(false) // 通知defineReactive不要将内容转换成响应式
     Object.keys(result).forEach(key => {
       /* istanbul ignore else */
       if (process.env.NODE_ENV !== 'production') {
@@ -36,10 +47,17 @@ export function initInjections (vm: Component) {
   }
 }
 
+/**
+ * 通过用户配置的inject，自底向上搜索可用的注入内容，并将搜索结果返回
+ * 当使用provide注入内容时，其实是将内容注入到当前组件实例的_provide中，所以inject可以从父组件实例的_provide中获取注入的内容
+ */
 export function resolveInject (inject: any, vm: Component): ?Object {
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached
     const result = Object.create(null)
+    /**
+     * hasSymbol：是否支持Symbol
+     */
     const keys = hasSymbol
       ? Reflect.ownKeys(inject)
       : Object.keys(inject)
@@ -48,18 +66,27 @@ export function resolveInject (inject: any, vm: Component): ?Object {
       const key = keys[i]
       // #6574 in case the inject object is observed...
       if (key === '__ob__') continue
+      /*
+      * 通过from属性得到provide源属性
+      * 当Vue.js被实例化时，会在上下文(this)中添加$options属性，这会把inject中提供的数据规格化，包括inject
+      *    用户设置： { inject: [foo] }
+      *   规格化：{ inject: { foo: { from: "foo" }}}
+      */
       const provideKey = inject[key].from
-      let source = vm
+      let source = vm // 一开始为当前实例
+      // 自底向上寻找provide源属性
       while (source) {
         if (source._provided && hasOwn(source._provided, provideKey)) {
           result[key] = source._provided[provideKey]
           break
         }
-        source = source.$parent
+        source = source.$parent // 向上寻找
       }
+      // 没有source，设置默认值
       if (!source) {
         if ('default' in inject[key]) {
           const provideDefault = inject[key].default
+          // 支持函数和普通字符串
           result[key] = typeof provideDefault === 'function'
             ? provideDefault.call(vm)
             : provideDefault

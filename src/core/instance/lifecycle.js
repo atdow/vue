@@ -29,12 +29,18 @@ export function setActiveInstance(vm: Component) {
   }
 }
 
+/**
+ * 初始化实例属性
+ * 以$开头的属性是提供给用户使用的外部属性，一_开头的属性是提供给内部使用的内部属性
+ */
 export function initLifecycle (vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
+  // 找出第一个非抽象父类
   let parent = options.parent
   if (parent && !options.abstract) {
+    // 自低向上低找
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }
@@ -42,6 +48,7 @@ export function initLifecycle (vm: Component) {
   }
 
   vm.$parent = parent
+  // 如果是根实例，那么$root就是本身，然后子实例的$root又是parent.$root，也就是根实例，孙实例也是这个原则寻找，相当于是自顶向下地将组件的$root依次传递给每一个组件的过程
   vm.$root = parent ? parent.$root : vm
 
   vm.$children = []
@@ -365,9 +372,14 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
   pushTarget()
+  /*
+    hook是一个数组，比如this.$options.created==>[fn]
+    是数组的原因是因为可以结合mixin，在mixin中定义了同名的lifecycle时，可以依次触发
+  */
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
   if (handlers) {
+    // 遍历hook数组，依次触发里面的函数
     for (let i = 0, j = handlers.length; i < j; i++) {
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }

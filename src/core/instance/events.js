@@ -9,13 +9,19 @@ import {
 } from '../util/index'
 import { updateListeners } from '../vdom/helpers/index'
 
+/**
+ * 初始化事件
+ * 将父组件在模板中使用的v-on注册的事件添加到子组件的事件系统（Vue.js的事件系统）中
+ * 如果v-on写在组件标签上，那么这个事件会注册到子组件的Vue.js事件系统中；如果是写在平台标签上，例如div，那么事件会被注册到浏览器事件中
+ */
 export function initEvents (vm: Component) {
-  vm._events = Object.create(null)
+  vm._events = Object.create(null) // 所有使用vm.$on注册的事件监听器都会保存在vm._events上
   vm._hasHookEvent = false
   // init parent attached events
+  // 初始化父组件附加的事件（父组件向子组件注册的事件）
   const listeners = vm.$options._parentListeners
   if (listeners) {
-    updateComponentListeners(vm, listeners)
+    updateComponentListeners(vm, listeners) // 将父组件向子组件注册的事件注册到子组件实例
   }
 }
 
@@ -39,12 +45,16 @@ function createOnceHandler (event, fn) {
   }
 }
 
+/**
+ * 将父组件向子组件注册的事件注册到子组件实例
+ */
 export function updateComponentListeners (
   vm: Component,
   listeners: Object,
   oldListeners: ?Object
 ) {
   target = vm
+  // 对比listeners和oldListeners的不同，并调用参数中提供的add和remove进行相应的注册事件和卸载事件的操作
   updateListeners(listeners, oldListeners || {}, add, remove, createOnceHandler, vm)
   target = undefined
 }
