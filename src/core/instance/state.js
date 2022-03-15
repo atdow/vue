@@ -49,8 +49,13 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 }
 
 export function initState (vm: Component) {
+  /**
+   * 用来保存当前组件中所有的watcher实例。无论是使用vm.$watch注册的watcher实例还是使用
+   * watch选项添加的watcher实例，都会添加到vm._watchers中
+   */
   vm._watchers = []
   const opts = vm.$options
+  // 先初始化props，后初始化data，这样就可以在data中使用props中的数据了
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
   if (opts.data) {
@@ -59,25 +64,44 @@ export function initState (vm: Component) {
     observe(vm._data = {}, true /* asRootData */)
   }
   if (opts.computed) initComputed(vm, opts.computed)
+  // 最后初始化watch，这样在watch中就既可以观察props，也可以使观察data
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
   }
 }
 
+/**
+ * 初始化props
+ * Vue.js内部通过子组件的props选项将需要的数据筛选出来之后添加到子组件的上下文中
+ *
+ * 通过规格化之后的props从其父组件传入的props数据中或new创建实例时传入的propsData参数中，筛选出需要的数据保存在vm._porps中，
+ * 然后在vm上设置一个代理，实现通过vm.x访问vm._props.x的目的
+ * @param {*} vm
+ * @param {*} propsOptions 规格化之后的props选项
+ */
+/**
+ *
+
+ */
 function initProps (vm: Component, propsOptions: Object) {
+  // 通过父组件传入或用户通过propsData传入的真实props数据
   const propsData = vm.$options.propsData || {}
+  // 指向vm._props的指针，也就是所有设置到props变量中的属性最终都会保存到vm._props中
   const props = vm._props = {}
   // cache prop keys so that future props updates can iterate using Array
   // instead of dynamic object key enumeration.
+  // 指向vm.$options._propKeys的指针，其作用是缓存props对象中的key，将来更新props时只需要遍历vm.$options._propKeys数据即可得到所有的props的key
   const keys = vm.$options._propKeys = []
+  // 当前组件是否是根组件
   const isRoot = !vm.$parent
   // root instance props should be converted
+  // 如果是根组件则不需要将props转换成响应式数据
   if (!isRoot) {
     toggleObserving(false)
   }
   for (const key in propsOptions) {
     keys.push(key)
-    const value = validateProp(key, propsOptions, propsData, vm)
+    const value = validateProp(key, propsOptions, propsData, vm) // 检验prop是否合法，并将propsData[key]返回
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
       const hyphenatedKey = hyphenate(key)
@@ -100,11 +124,12 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
-      defineReactive(props, key, value)
+      defineReactive(props, key, value) // 通过defineReactive将value设置到vm._props上
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
+    // 如果key不在vm上，则调用proxy，在vm上设置一个以key为属性的代理，当使用vm[key]访问数据时，其实访问的是vm_props[key]
     if (!(key in vm)) {
       proxy(vm, `_props`, key)
     }

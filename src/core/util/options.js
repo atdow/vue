@@ -294,27 +294,37 @@ export function validateComponentName (name: string) {
 /**
  * Ensure all props option syntax are normalized into the
  * Object-based format.
+ * 规格化props
+ *
+ * 数组格式的props将被规格化为对象格式
  */
 function normalizeProps (options: Object, vm: ?Component) {
   const props = options.props
   if (!props) return
   const res = {}
   let i, val, name
+  // 如果是数组格式
   if (Array.isArray(props)) {
     i = props.length
     while (i--) {
       val = props[i]
       if (typeof val === 'string') {
-        name = camelize(val)
+        name = camelize(val) // 将props名称驼峰化
         res[name] = { type: null }
       } else if (process.env.NODE_ENV !== 'production') {
         warn('props must be strings when using array syntax.')
       }
     }
-  } else if (isPlainObject(props)) {
+  } else if (isPlainObject(props)) { // 如果是对象形式
+    /**
+     { propA: Number}
+     { propb: [String, number] }
+     { propc: { type: String, required: true } }
+     */
     for (const key in props) {
       val = props[key]
       name = camelize(key)
+      // 规格化之后的props类型既有可能是基础的类型函数，也有可能是数组
       res[name] = isPlainObject(val)
         ? val
         : { type: val }
