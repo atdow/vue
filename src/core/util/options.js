@@ -448,31 +448,39 @@ export function mergeOptions (
  * Resolve an asset.
  * This function is used because child instances need access
  * to assets defined in its ancestor chain.
+ * 查找过滤器、组件和指令
+ * 过滤器：注册全局过滤器和在组件的选项中定义本地的过滤器，在初始化Vue.js实例时，把全局过滤器和组件内注册的过滤器合并到this.$options.filters中了
+ *        所以只需要在this.$options.filters查找即可
  */
 export function resolveAsset (
   options: Object,
   type: string,
-  id: string,
+  id: string, // 过滤器id
   warnMissing?: boolean
 ): any {
   /* istanbul ignore if */
-  if (typeof id !== 'string') {
+  if (typeof id !== 'string') { // 过滤器id必须是字符串类型
     return
   }
-  const assets = options[type]
+  const assets = options[type] // 如果type==='filters'，就是assets=this.$options.filters，过滤器集合
   // check local registration variations first
+  // 检查assets自身是否存在id属性，如果存在，直接返回（hasOwn：Object.prototype.hasOwnProperty）
   if (hasOwn(assets, id)) return assets[id]
+  // 将id驼峰化后检查assets身上是否存在将id驼峰化后的属性
   const camelizedId = camelize(id)
   if (hasOwn(assets, camelizedId)) return assets[camelizedId]
+  // 将id首字母大写后检查assets身上是否存在将id首字母大写后的属性
   const PascalCaseId = capitalize(camelizedId)
   if (hasOwn(assets, PascalCaseId)) return assets[PascalCaseId]
   // fallback to prototype chain
+  // 从原型链上按照上面的顺序在检查一遍
   const res = assets[id] || assets[camelizedId] || assets[PascalCaseId]
+  // 找不到后警告
   if (process.env.NODE_ENV !== 'production' && warnMissing && !res) {
     warn(
       'Failed to resolve ' + type.slice(0, -1) + ': ' + id,
       options
     )
   }
-  return res
+  return res // 无论找到与否，都返回查找结果
 }

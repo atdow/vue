@@ -29,10 +29,12 @@ function normalizeEvents (on) {
 
 let target: any
 
+// createOnceHandler实现once功能
 function createOnceHandler (event, handler, capture) {
   const _target = target // save current target element in closure
   return function onceHandler () {
-    const res = handler.apply(null, arguments)
+    const res = handler.apply(null, arguments) // 执行handler函数
+    // 如果返回值不是null，就进行解绑
     if (res !== null) {
       remove(event, onceHandler, capture, _target)
     }
@@ -44,6 +46,7 @@ function createOnceHandler (event, handler, capture) {
 // safe to exclude.
 const useMicrotaskFix = isUsingMicroTask && !(isFF && Number(isFF[1]) <= 53)
 
+// 添加事件
 function add (
   name: string,
   handler: Function,
@@ -80,6 +83,7 @@ function add (
       }
     }
   }
+  // 给原生事件添加事件监听器
   target.addEventListener(
     name,
     handler,
@@ -88,29 +92,33 @@ function add (
       : capture
   )
 }
-
+// 移除事件
 function remove (
   name: string,
   handler: Function,
   capture: boolean,
   _target?: HTMLElement
 ) {
+  // 调用浏览器提供的removeEventListener进行解绑事件
   (_target || target).removeEventListener(
     name,
-    handler._wrapper || handler,
+    handler._wrapper || handler, // 因为在绑定事件时经历了withMacroTask的处理，最终被绑定的事件监听器其实是handler._wrapper，所以解绑时也需要解绑handler._wrapper；只有handler._wrapper不存在时才解绑handler
     capture
   )
 }
-
+/**
+ * 事件绑定相关的处理逻辑
+ */
 function updateDOMListeners (oldVnode: VNodeWithData, vnode: VNodeWithData) {
+  // 如果两个VNode中的事件对象都不存在，说明上一次没有绑定任何事件，这一次元素更新也没有新增事件绑定，因此不需要进行事件的绑定与解绑
   if (isUndef(oldVnode.data.on) && isUndef(vnode.data.on)) {
     return
   }
-  const on = vnode.data.on || {}
-  const oldOn = oldVnode.data.on || {}
-  target = vnode.elm
-  normalizeEvents(on)
-  updateListeners(on, oldOn, add, remove, createOnceHandler, vnode.context)
+  const on = vnode.data.on || {} // 新虚拟节点上的事件对象
+  const oldOn = oldVnode.data.on || {} // 旧虚拟节点上的事件对象
+  target = vnode.elm // vnode.elm保存vnode所对应的DOM元素
+  normalizeEvents(on) // 对特殊情况下的事件对象做一些特殊处理
+  updateListeners(on, oldOn, add, remove, createOnceHandler, vnode.context) // 更新事件监听器
   target = undefined
 }
 

@@ -1,7 +1,17 @@
+/*
+ * @Author: atdow
+ * @Date: 2022-02-10 21:22:08
+ * @LastEditors: null
+ * @LastEditTime: 2022-03-20 21:42:19
+ * @Description: file description
+ */
 /* @flow */
 
 const validDivisionCharRE = /[\w).+\-_$\]]/
 
+/**
+ * 解析过滤器
+ */
 export function parseFilters (exp: string): string {
   let inSingle = false
   let inDouble = false
@@ -74,8 +84,14 @@ export function parseFilters (exp: string): string {
     (filters || (filters = [])).push(exp.slice(lastFilterIndex, i).trim())
     lastFilterIndex = i + 1
   }
+  /**
+   * {{ message | filterA | filterB}}
+   * let filters = exp.split('|')
+   * let expression = filters.shift().trim() [message, filterA, filterB]
+   */
 
   if (filters) {
+    // 循环遍历过滤器，因为过滤器支持串联（前面过滤器的结果将会作为下一个过滤器的输入）
     for (i = 0; i < filters.length; i++) {
       expression = wrapFilter(expression, filters[i])
     }
@@ -84,14 +100,21 @@ export function parseFilters (exp: string): string {
   return expression
 }
 
+/**
+ * 拼接过滤器字符串
+ * @param {*} exp 表达式
+ * @param {*} filter 过滤器
+ * @returns
+ */
 function wrapFilter (exp: string, filter: string): string {
-  const i = filter.indexOf('(')
+  const i = filter.indexOf('(') // 如果过滤器字符串中包含字符(，说明过滤器携带了其他参数
+  // filterA('arg1',arg2)
   if (i < 0) {
     // _f: resolveFilter
     return `_f("${filter}")(${exp})`
   } else {
-    const name = filter.slice(0, i)
-    const args = filter.slice(i + 1)
-    return `_f("${name}")(${exp}${args !== ')' ? ',' + args : args}`
+    const name = filter.slice(0, i) // filterA
+    const args = filter.slice(i + 1) // 'arg1',arg2)
+    return `_f("${name}")(${exp}${args !== ')' ? ',' + args : args}` // 在后面这里已经将args最后的)去掉
   }
 }

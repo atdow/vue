@@ -267,6 +267,7 @@ export const no = (a?: any, b?: any, c?: any) => false
 
 /**
  * Return the same value.
+ * 返回相同的值
  */
 export const identity = (_: any) => _
 
