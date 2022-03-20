@@ -2,7 +2,7 @@
  * @Author: atdow
  * @Date: 2022-02-10 21:22:08
  * @LastEditors: null
- * @LastEditTime: 2022-03-14 23:19:30
+ * @LastEditTime: 2022-03-20 14:50:47
  * @Description: file description
  */
 /* @flow */
@@ -11,11 +11,15 @@ import { hasOwn } from 'shared/util'
 import { warn, hasSymbol } from '../util/index'
 import { defineReactive, toggleObserving } from '../observer/index'
 
+/**
+ * 初始化provide：将provide选项添加到vm._provided
+ * provide选项应该是一个对象或者是返回一个对象的函数
+ */
 export function initProvide (vm: Component) {
   const provide = vm.$options.provide
   if (provide) {
     vm._provided = typeof provide === 'function'
-      ? provide.call(vm)
+      ? provide.call(vm) // 如果是函数，则调用（应该要返回一个对象）
       : provide
   }
 }

@@ -211,14 +211,19 @@ export default class Watcher {
   /**
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
+   * 用于计算属性的重新计算
    */
   evaluate () {
-    this.value = this.get()
-    this.dirty = false
+    this.value = this.get() // 重新计算值
+    this.dirty = false // 标志已经更新过了值
   }
 
   /**
    * Depend on all deps collected by this watcher.
+   * 搜集这个watcher的所有依赖
+   * this.deps：保存了计算属性用到的所有状态的dep实例，而每个属性的dep实例保存了它的所有依赖。换句话说，this.deps是计算属性中用到的所有
+   *    状态的dep实例，而依次执行了dep实例的depend方法就是将组件的Watcher依次加入到这些dep实例的依赖列表中，这就实现了让组件的Watcher
+   *    观察计算属性中用到的所有状态的变化
    */
   depend () {
     let i = this.deps.length
